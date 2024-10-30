@@ -9,7 +9,6 @@ from system.error_code import ERROR_CODE
 from util.response import response200, response_error
 from internal import auth
 from system.authentication_jwt import authorized, encode_access_token
-# from model.file_upload import FileUpload
 import uuid, os, random, string, jwt, requests
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -230,13 +229,6 @@ def update_user_info():
     user = db.session.query(User).get(user_id)
     if not user:
         return response_error(ERROR_CODE['USER_NOT_FOUND'])
-
-    # check if avatar is existed
-    # if 'avatar_id' in data:
-    #     existed_avatar = db.session.query(FileUpload).get(data['avatar_id'])
-    #     if not existed_avatar:
-    #         return response_error(ERROR_CODE['FILE_UPLOAD_NOT_FOUND'])
-    # check if change password must send old password
     if 'new_password' in data:
         if not 'password' in data:
             return response_error(ERROR_CODE['OLD_PASSWORD_NOT_EXIST'])

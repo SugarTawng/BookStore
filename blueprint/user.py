@@ -44,7 +44,6 @@ def get_list_users():
 @bp.route("/<uuid:user_id>", methods=["GET"])
 @swag_from(f"""{document_path}/get_user_by_id.yml""")
 def get_user_by_id(user_id):
-    print("user id: ", user_id)
     user, err = user_lib.get_user_by_id(user_id)
     return err and response_error(err) or response200(user)
 

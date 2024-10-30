@@ -1,26 +1,13 @@
-from operator import sub
-from re import S
-from tabnanny import check
 from model.book import *
 from model.db import db
 from system.error_code import ERROR_CODE
 from util import common
-
 from util.response import paginate_data
-from sqlalchemy import desc, func, and_, or_
 from model.user import User
 from system.exceptions import ApplicationError
-# from model.user import UserRole
-# from internal import order as order_lib
-import math
-from util.response import response_error
-from datetime import timedelta
-from services.automation import *
-from collections import defaultdict
 
 
-
-def get_list_books(pagination_param, filter_obj, sort_value, user_id = None):
+def get_list_books(pagination_param, filter_obj):
     try:
         course_db = db.session.query(Book)
 
@@ -28,30 +15,6 @@ def get_list_books(pagination_param, filter_obj, sort_value, user_id = None):
         for k,v in filter_obj.items():
             if k == 'keyword':
                 course_db = course_db.filter(Book.course_name.ilike(f'%{v}%'))
-
-        # if sort_value and sort_value.get('sort_by') in common.LIST_KEY_SORT_COURSE:
-        #     field = sort_value['sort_by']
-        #     if field == 'learners_count':
-        #         learners_subquery = db.session.query(
-        #                 CourseEnrollment.course_id, 
-        #                 func.count(CourseEnrollment.student_id)\
-        #                     .label('learners_count')
-        #             ).group_by(CourseEnrollment.course_id).subquery()
-        #         course_db = course_db.outerjoin(
-        #                 learners_subquery, 
-        #                 learners_subquery.c.course_id == Course.id
-        #             )
-        #         field = func.coalesce(learners_subquery.c.learners_count, 0)
-        #     elif field == 'created_at':
-        #         field = getattr(Course, field)
-
-        #     if sort_value['sort_type'] == "-":
-        #         course_db = course_db.order_by(field)
-        #     else:  
-        #         course_db = course_db.order_by(desc(field))
-        # elif sort_value and (sort_value.get('sort_by') not in (None, '')
-        #     and sort_value.get('sort_by') not in common.LIST_KEY_SORT_COURSE):
-        #     return [], None, None
         
     except ApplicationError as err:
         common.push_log_to_sentry(message='Get list courses failed', extra_data={
@@ -70,11 +33,11 @@ def get_list_books(pagination_param, filter_obj, sort_value, user_id = None):
 
 
 
-def create_book(data, user_id):
+def create_book(data):
     try:
         # Lấy title và author_id từ data
         title = data.get('title')
-        author_id = user_id
+        author_id = data.get('author_id')
 
         # Kiểm tra dữ liệu đầu vào
         if not title:
@@ -107,3 +70,51 @@ def create_book(data, user_id):
             extra_data={'payload': data, 'error': str(err)}
         )
         return None, err
+
+def update_book(data, book_id):
+    try:
+        book = db.session.query(Book).filter(
+            Book.id==book_id,
+        ).first()
+        if not book:
+            return None, ERROR_CODE["BOOK_NOT_FOUND"]
+
+        author_id = data.get('author_id')
+        title = data.get('title');
+        if author_id:
+            author = db.session.query(User).get(author_id)
+            if not author:
+                return None, ERROR_CODE["AUTHOR_NOT_FOUND"]
+
+
+        for k, v in data.items():
+            setattr(book, k, v)
+        db.session.commit()
+        return book.serialize(), None
+    except ApplicationError as err:
+        common.push_log_to_sentry(message='Update course failed', extra_data={
+            'payload': data,
+            'book_id': book_id,
+            'error': str(err)
+        })
+        return None, err
+    
+def delete_book(book_id):
+    try:
+        book_item = db.session.query(Book).filter_by( id=book_id).first()
+        if not book_item:
+            return None, ERROR_CODE["BOOK_NOT_FOUND"]
+        db.session.delete(book_item)
+        db.session.commit()
+        return True, None
+    except ApplicationError as err:
+        common.push_log_to_sentry(message='Delete cart item failed', extra_data={
+            'error': str(err)
+        })
+        return None, err
+    
+def get_book_by_id(book_id):
+    book_item: Book = db.session.query(Book).get(book_id)
+    if not book_item:
+        return None, ERROR_CODE["BOOK_NOT_FOUND"]
+    return book_item.serialize(), None

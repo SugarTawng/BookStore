@@ -1,16 +1,9 @@
-from datetime import datetime
-from typing import Any
-from model import User, Skill
+from model import User
 from model.db import db
-# from model.user import UserFollower
-from system.authentication_jwt import encode_access_token
 from system.error_code import ERROR_CODE
 from system.exceptions import ApplicationError
 from util import common
-from sqlalchemy import desc, func
-# from services.mail import mail_service
-import time, jwt, os
-
+from sqlalchemy import desc
 from util.response import paginate_data
 
 
@@ -59,38 +52,3 @@ def get_user_by_id(user_id):
     if not user:
         return None, ERROR_CODE["USER_NOT_FOUND"]
     return user.simplified_serialize(), None
-
-# def check_follow(user_id, followee_id):
-#     is_following = db.session.query(UserFollower).filter(
-#         UserFollower.user_id == followee_id, 
-#         UserFollower.follower_id == user_id
-#     ).first()
-#     if not is_following:
-#         return False, None
-
-#     return True, None
-
-# def follow_user(user_id, followee_id):
-#     if user_id == followee_id:
-#         return None, ERROR_CODE["NOT_ALLOW"]
-#     followee: User = db.session.query(User).get(followee_id)
-#     if not followee:
-#         return None, ERROR_CODE["USER_NOT_FOUND"]
-
-#     is_following = db.session.query(UserFollower).filter(
-#         UserFollower.user_id == followee_id, 
-#         UserFollower.follower_id == user_id
-#     ).first()
-#     if is_following:
-#         db.session.delete(is_following)
-#         db.session.commit()
-#         return None, None
-
-#     following = UserFollower(
-#         user_id=followee_id,
-#         follower_id=user_id,
-#     )
-#     db.session.add(following)
-#     db.session.commit()
-
-#     return following.serialize(), None
